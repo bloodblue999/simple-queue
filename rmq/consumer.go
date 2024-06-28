@@ -1,6 +1,7 @@
 package rmq
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"log"
 	"time"
@@ -9,16 +10,36 @@ import (
 )
 
 type Consumer struct {
-	resultChannel chan string
+	responder *Responder
+}
+
+type ConsumerRequest struct {
+	RequestId string
+}
+
+type ConsumerResponse struct {
+	Uuid  string
+	Error error
 }
 
 func (c Consumer) Consume(delivery rmq.Delivery) {
+	var request ConsumerRequest
+
+	err := json.Unmarshal([]byte(delivery.Payload()), &request)
+	if err != nil {
+		log.Println(err.Error())
+		delivery.Reject()
+		return
+	}
+
 	time.Sleep(2 * time.Second)
 
-	generatedUUID := uuid.NewString()
-	log.Println(generatedUUID)
+	response := ConsumerResponse{
+		Uuid: uuid.NewString(),
+	}
+	log.Println(response.Uuid)
 
-	c.resultChannel <- generatedUUID
+	c.responder.SendResponse(request.RequestId, response)
 
 	if err := delivery.Ack(); err != nil {
 		log.Println(err.Error())

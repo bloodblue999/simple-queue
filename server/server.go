@@ -1,22 +1,21 @@
 package server
 
 import (
+	rmq2 "github.com/savi2w/simple-queue/rmq"
 	"log"
 
-	"github.com/adjust/rmq/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/savi2w/simple-queue/router"
 )
 
-func Run(queue rmq.Queue, resultChannel chan string) error {
+func Run(broker *rmq2.Broker) error {
 	server := echo.New()
 	server.Use(middleware.Recover())
 
 	router := &router.Router{
-		Queue:         queue,
-		Server:        server,
-		ResultChannel: resultChannel,
+		Server: server,
+		Broker: broker,
 	}
 
 	server.GET("/", router.Handler)

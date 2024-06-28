@@ -1,24 +1,22 @@
 package router
 
 import (
+	rmq2 "github.com/savi2w/simple-queue/rmq"
 	"net/http"
 
-	"github.com/adjust/rmq/v5"
 	"github.com/labstack/echo/v4"
 )
 
 type Router struct {
-	Queue         rmq.Queue
-	Server        *echo.Echo
-	ResultChannel chan string
+	Broker *rmq2.Broker
+	Server *echo.Echo
 }
 
 func (r *Router) Handler(ctx echo.Context) error {
-	if err := r.Queue.PublishBytes([]byte{}); err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+	response := r.Broker.MakeRequest()
+	if response.Error != nil {
+		return ctx.String(http.StatusInternalServerError, response.Error.Error())
 	}
 
-	generatedUUID := <-r.ResultChannel
-
-	return ctx.String(http.StatusOK, generatedUUID)
+	return ctx.String(http.StatusOK, response.Uuid)
 }

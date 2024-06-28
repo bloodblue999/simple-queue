@@ -8,9 +8,7 @@ import (
 )
 
 func main() {
-	resultChannel := make(chan string)
-
-	conn, queue, err := rmq.Run(resultChannel)
+	conn, responder, queue, err := rmq.Run()
 	if err != nil {
 		log.Println(err.Error())
 		return
@@ -21,7 +19,12 @@ func main() {
 		<-channel
 	}()
 
-	if err := server.Run(queue, resultChannel); err != nil {
+	broker := rmq.Broker{
+		Queue:     queue,
+		Responder: responder,
+	}
+
+	if err := server.Run(&broker); err != nil {
 		log.Println(err.Error())
 		return
 	}
